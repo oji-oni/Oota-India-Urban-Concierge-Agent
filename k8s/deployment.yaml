@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oota-agent
+  labels:
+    app: oota-agent
+    version: "0.1.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oota-agent
+  template:
+    metadata:
+      labels:
+        app: oota-agent
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: oota-agent
+          image: oota-agent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          # Load non-sensitive config from ConfigMap and secrets from Secret
+          envFrom:
+            - secretRef:
+                name: oota-secrets
+            - configMapRef:
+                name: oota-config
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 3
+          volumeMounts:
+            - name: oota-data
+              mountPath: /app/data
+            - name: oota-skills
+              mountPath: /app/.agents
+      volumes:
+        - name: oota-data
+          persistentVolumeClaim:
+            claimName: oota-data-pvc
+        - name: oota-skills
+          persistentVolumeClaim:
+            claimName: oota-skills-pvc

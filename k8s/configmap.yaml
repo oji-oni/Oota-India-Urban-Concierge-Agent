@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oota-config
+  labels:
+    app: oota-agent
+data:
+  # ── Agent defaults ──────────────────────────────────────────────────────────
+  DEFAULT_CITY: "bengaluru"
+  GEMINI_MODEL: "gemini-2.0-flash"
+
+  # ── Storage paths (match the PVC mountPath in deployment.yaml) ─────────────
+  CHROMA_DATA_DIR: "/app/data/chroma"
+  SQLITE_DB_PATH: "/app/data/oota.db"
+
+  # ── Server ──────────────────────────────────────────────────────────────────
+  WEBHOOK_MODE: "true"
+  PORT: "8000"
+  HOST: "0.0.0.0"
+
+  # ── Telegram ────────────────────────────────────────────────────────────────
+  # Comma-separated Telegram user IDs allowed to use the bot.
+  # Leave empty to allow all users (not recommended in production).
+  TELEGRAM_ALLOWED_USER_IDS: ""
+
+  # ── Local LLM (optional fallback) ───────────────────────────────────────────
+  OLLAMA_HOST: "http://localhost:11434"

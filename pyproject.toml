@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oota-agent"
+version = "0.1.0"
+description = "Oota — India Urban Concierge Agent (Privacy-First, Multi-City)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "Oota Team" }
+]
+keywords = ["india", "concierge", "agent", "urban", "ai"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "google-adk>=1.0.0",
+    "fastmcp>=2.0.0",
+    "chromadb>=0.5.0",
+    "fastapi",
+    "uvicorn[standard]",
+    "httpx",
+    "python-telegram-bot>=20.0",
+    "cryptography",
+    "python-dotenv",
+    "sentence-transformers",
+]
+
+[project.scripts]
+oota = "main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["oota*", "data*", "mcp_servers*", "skills*", "agents*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.yaml", "*.yml", "*.sql", "*.md"]

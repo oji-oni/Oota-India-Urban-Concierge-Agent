@@ -1,0 +1,44 @@
+version: '3.9'
+
+services:
+  oota-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist SQLite DB, ChromaDB, and local documents between container restarts
+      - ./data:/app/data
+      # Persist auto-generated agent skills
+      - ./.agents:/app/.agents
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+
+  # ── Optional: standalone ChromaDB server ─────────────────────────────────────
+  # Uncomment this block and set CHROMA_HOST=http://chromadb:8000 in .env
+  # if you prefer a dedicated ChromaDB container over the default embedded mode.
+  #
+  # chromadb:
+  #   image: chromadb/chroma:latest
+  #   ports:
+  #     - "8001:8000"
+  #   volumes:
+  #     - chroma_data:/chroma/chroma
+  #   restart: unless-stopped
+
+volumes:
+  # Named volume for ChromaDB when running as a standalone service (see above)
+  chroma_data:
