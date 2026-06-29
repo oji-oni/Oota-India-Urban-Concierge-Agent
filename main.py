@@ -196,23 +196,23 @@ async def _run_terminal_mode() -> None:
     Fall back to ADK interactive terminal when no Telegram token is configured.
     """
     try:
-        from google.adk.cli import run_interactive  # type: ignore[import]
-        from oota_agent.agent import root_agent  # type: ignore[import]
-
+        from google.adk.cli.cli import run_cli
         logger.info("Starting ADK interactive terminal mode...")
-        await run_interactive(root_agent)
-    except ImportError as exc:
+        # run_cli is a coroutine CLI loop
+        await run_cli(agent_parent_dir=".", agent_folder_name="oota_agent", save_session=False)
+    except Exception as exc:
         logger.error(
-            "Cannot start terminal mode — missing modules: %s\n"
+            "Cannot start terminal mode: %s\n"
             "Tip: Set TELEGRAM_BOT_TOKEN in .env to use the Telegram bot instead.",
             exc,
         )
         print(
-            "\n[Oota] Terminal mode requires oota_agent and google-adk.\n"
+            f"\n[Oota] Terminal mode failed: {exc}\n"
             "Set TELEGRAM_BOT_TOKEN in .env to use the Telegram bot instead.\n",
             file=sys.stderr,
         )
         sys.exit(1)
+
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────

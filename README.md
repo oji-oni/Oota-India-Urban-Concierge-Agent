@@ -297,6 +297,19 @@ uvicorn gateway.webhook_server:app --reload
 
 ---
 
-## License
+## Kaggle Capstone Evaluation Map
 
-MIT © Oota Team
+This project demonstrates the key concepts of the agent engineering course:
+
+| Required Concept | Implementation Location / Details |
+|---|---|
+| **Agent / Multi-agent system (ADK)** | Root agent `oota_concierge` in `oota_agent/agent.py` utilizing sub-agents: `skill_generator` (`oota_agent/skill_generator.py`) and `memory_curator` (`oota_agent/memory_curator.py`). |
+| **MCP Server** | Custom FastMCP server in `mcp_servers/city_data_server.py` exposing 25 tools for local SQLite transit, geography, midpoint, and budget math. Integrated via `McpToolset` in `agent.py`. |
+| **Security Features** | Cryptographic vault (`manage_vault_encryption` in `oota_agent/tools.py`) using Fernet key DB encryption-at-rest. Privacy-pure local ChromaDB embedding preference storage. |
+| **Deployability** | Multi-stage `Dockerfile` and `docker-compose.yml` for local sandbox containers, plus full Kubernetes manifests (`deployment`, `service`, `pvc`, `secret`, `configmap`) in `k8s/` folder. |
+| **Agent Skills** | Structured YAML frontmatter skill playbooks in `.agents/skills/india-city-navigator/SKILL.md` loaded automatically by the agent engine. |
+
+---
+
+## Made with ❤️
+

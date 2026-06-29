@@ -647,4 +647,4 @@ def get_city_traffic_rules(city: str) -> str:
         return json.dumps([dict(r) for r in rows], default=str)
 
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    mcp.run(transport="stdio", show_banner=False)

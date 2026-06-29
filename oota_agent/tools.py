@@ -9,6 +9,7 @@ import sqlite3
 import hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 import chromadb
 from cryptography.fernet import Fernet
 
@@ -412,3 +413,23 @@ def collect_post_event_feedback(itinerary_id: int, rating: int, notes: str = "")
     )
     
     return json.dumps({"status": "feedback_saved", "itinerary_id": itinerary_id, "rating": rating})
+
+# ── 10. Execute Travel Workflow ───────────────────────────────────────────────
+async def execute_travel_workflow(city: str, areas: list[str], tool_context: Any) -> str:
+    """
+    Execute a structured ADK Workflow graph to calculate geographic midpoints and check rain/budget safety constraints.
+    
+    Args:
+        city: The city slug (e.g. 'bengaluru')
+        areas: List of neighborhood area names to include in calculations
+        tool_context: Injected ADK ToolContext instance
+    """
+    from oota_agent.workflow import travel_workflow
+    node_input = {"city": city, "areas": areas}
+    
+    # Run the workflow through the async generator
+    async for _ in travel_workflow.run(ctx=tool_context, node_input=node_input):
+        pass
+        
+    return json.dumps(tool_context.output)
+
