@@ -31,6 +31,7 @@ Key capabilities:
 3. **Micro-Climate Rain Alerts**: Monitors neighborhood precip forecasts and proactively suggests indoor mall backups for outdoor park dates.
 4. **Expense Split Ledger**: Automatically splits bill expenses and tracks net debts locally.
 5. **Secure Local Vault**: Encrypts SQLite databases and Chroma collections at rest using local Fernet keys.
+6. **Proactive Autonomous Check-In**: A background job periodically prompts the ADK agent to audit itineraries, budgets, and local weather forecasts to generate contextual conversational check-in questions directly to user chats.
 
 ---
 
