@@ -451,6 +451,81 @@ async def job_feedback_requests(context: ContextTypes.DEFAULT_TYPE) -> None:
             )
 
 
+async def job_autonomous_checkin(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Runs periodically.
+    Queries all active user IDs and asks the root ADK agent to perform
+    a status check, invoking its tools and generating a check-in question.
+    """
+    conn = _get_db_connection()
+    if conn is None:
+        return
+
+    try:
+        # Find all distinct user IDs in the database
+        cursor = conn.execute(
+            """
+            SELECT DISTINCT user_id FROM user_budgets
+            UNION
+            SELECT DISTINCT user_id FROM active_itineraries
+            """
+        )
+        user_rows = cursor.fetchall()
+    except sqlite3.OperationalError as exc:
+        logger.debug("Database check for autonomous users failed: %s", exc)
+        user_rows = []
+    finally:
+        conn.close()
+
+    for row in user_rows:
+        user_id_str: str = row["user_id"]
+        # Convert string ID to int for Telegram chat_id
+        try:
+            chat_id = int(user_id_str)
+        except ValueError:
+            # Skip non-numeric test users or placeholder IDs
+            continue
+
+        # Get city context for this user
+        city = DEFAULT_CITY
+        conn = _get_db_connection()
+        if conn:
+            try:
+                city_row = conn.execute(
+                    "SELECT c.slug FROM active_itineraries ai "
+                    "JOIN cities c ON ai.city_id = c.id "
+                    "WHERE ai.user_id = ? "
+                    "ORDER BY ai.itinerary_id DESC LIMIT 1",
+                    (user_id_str,)
+                ).fetchone()
+                if city_row:
+                    city = city_row["slug"]
+            except Exception:
+                pass
+            finally:
+                conn.close()
+
+        logger.info("Running autonomous status check for user_id=%s in city=%s", chat_id, city)
+        try:
+            # Prompt the agent to perform an audit and generate a check-in question
+            prompt = (
+                "System: Run a proactive check-in audit. Access my active itineraries, weather forecast, "
+                "and budget limits. Identify any upcoming events, potential rain/weather alerts, or budget "
+                "limit warnings. Then, formulate a friendly, conversational question to check in with me. "
+                "If everything is normal, ask a friendly concierge tip/question about today's plans in the city."
+            )
+            response = await _run_agent(prompt, city, chat_id)
+            
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=response,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Could not send autonomous check-in to user %s: %s", chat_id, exc
+            )
+
+
 # ── Error handler ─────────────────────────────────────────────────────────────
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.error("Unhandled exception", exc_info=context.error)
@@ -458,6 +533,21 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.effective_message.reply_text(
             "😓 Something went wrong on my end. Please try again in a moment."
         )
+
+
+# ── Proactive scheduler helper ────────────────────────────────────────────────
+def _schedule_jobs(app: Application) -> None:
+    """Schedule repeating proactive background jobs on the application's JobQueue."""
+    job_queue: JobQueue = app.job_queue  # type: ignore[assignment]
+    if job_queue is not None:
+        # Check if they are already scheduled to prevent duplicates
+        existing = {job.callback.__name__ for job in job_queue.jobs()}
+        if "job_departure_warnings" not in existing:
+            job_queue.run_repeating(job_departure_warnings, interval=300, first=10)
+        if "job_feedback_requests" not in existing:
+            job_queue.run_repeating(job_feedback_requests, interval=300, first=30)
+        if "job_autonomous_checkin" not in existing:
+            job_queue.run_repeating(job_autonomous_checkin, interval=600, first=45)
 
 
 # ── Application factory (for webhook mode) ────────────────────────────────────
@@ -477,6 +567,7 @@ def get_application() -> Application:
     )
 
     _register_handlers(app)
+    _schedule_jobs(app)
     return app
 
 
@@ -523,11 +614,8 @@ async def run_telegram_bot() -> None:
 
     _register_handlers(app)
 
-    # Schedule proactive jobs every 5 minutes
-    job_queue: JobQueue = app.job_queue  # type: ignore[assignment]
-    if job_queue is not None:
-        job_queue.run_repeating(job_departure_warnings, interval=300, first=10)
-        job_queue.run_repeating(job_feedback_requests, interval=300, first=30)
+    # Schedule proactive jobs
+    _schedule_jobs(app)
 
     logger.info("Starting Oota Telegram bot (long-polling mode)...")
     await app.initialize()
