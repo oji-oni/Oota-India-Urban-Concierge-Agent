@@ -37,9 +37,13 @@ Key capabilities:
 ## 4. Key Concepts Demonstrated (Evaluation Matrix)
 
 ### A. Agent / Multi-Agent System (ADK)
-- **Root Agent**: The `oota_concierge` root agent manages incoming conversation context.
-- **Skill Generator Sub-Agent**: Triggered automatically when a task executes ≥5 tool calls. It reflects on successful procedures, crystallizing them into a reusable `SKILL.md` playbook in `.agents/skills/auto/`.
-- **Memory Curator Sub-Agent**: Runs periodically via cron, auditing Chroma preferences and skill usage records. It transitions inactive data: `Active -> Stale (30 days) -> Archived (90 days)` without deleting data.
+- **Root Agent**: The `oota_concierge` root agent manages incoming conversation context and routes queries.
+- **Conversational Sub-Agents**:
+  - `travel_planner`: Specialized in constructing day-trip itineraries, querying transit coordinates/fares, checking weather contingencies, and executing the multi-node travel planning `Workflow`.
+  - `expense_tracker`: Handles shared expense splits, computes net debt balances, and protects the user's monthly budget limit.
+  - `curation_agent`: Manages semantic preferences using the Chroma database, schedules document indexings (RAG), and decrypts/encrypts the vault.
+- **Skill Generator Sub-Agent**: Reflects on successful conversational procedures and crystallizes them into reusable `SKILL.md` playbooks in `.agents/skills/auto/`.
+- **Memory Curator Sub-Agent**: Audits local databases and Chroma collections to transition inactive memory states: `Active -> Stale (30 days) -> Archived (90 days)` without deleting data.
 
 ### B. MCP Server
 - **FastMCP Data Server (`city_data_server.py`)**: Houses 25 custom tools written in Python. Exposes SQLite relational mappings for cities, neighborhoods, points of interest, metro transit stations, and weather forecasts.
