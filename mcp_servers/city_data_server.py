@@ -504,8 +504,8 @@ def get_weather_radar_warning(city: str, neighborhood: str) -> str:
         return json.dumps({"rain_warning": False, "precipitation_probability": max_rain})
 
 @mcp.tool()
-def log_shared_expense(itinerary_id: int, payer_user_id: str, description: str, total_amount_rupees: float, split_type: str, split_data: str) -> str:
-    """Log a shared group expense split locally."""
+def log_shared_expense(payer_user_id: str, description: str, total_amount_rupees: float, split_type: str, split_data: str, itinerary_id: int | None = None) -> str:
+    """Log a shared group expense split locally. itinerary_id is optional — leave it out for ad-hoc expense splits not tied to an itinerary."""
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
@@ -519,19 +519,37 @@ def log_shared_expense(itinerary_id: int, payer_user_id: str, description: str, 
         return json.dumps({"status": "expense_logged", "id": cur.lastrowid})
 
 @mcp.tool()
-def get_expense_balances(itinerary_id: int) -> str:
-    """Get summarized debt balances for a shared outing."""
+def get_expense_balances(itinerary_id: int | None = None) -> str:
+    """Get summarized debt balances for a shared outing. If itinerary_id is not specified, summarizes all standalone/non-itinerary expenses."""
     with get_db() as conn:
-        expenses = conn.execute("SELECT * FROM shared_expenses WHERE itinerary_id = ?", (itinerary_id,)).fetchall()
+        if itinerary_id is None:
+            expenses = conn.execute("SELECT * FROM shared_expenses WHERE itinerary_id IS NULL").fetchall()
+        else:
+            expenses = conn.execute("SELECT * FROM shared_expenses WHERE itinerary_id = ?", (itinerary_id,)).fetchall()
+            
         if not expenses:
-            return json.dumps({"balances": [], "notes": "No expenses logged for this itinerary."})
+            return json.dumps({"balances": [], "notes": "No expenses logged."})
 
         # Calculate splits:
         # split_data usually looks like: {"Arjun": 500, "Priya": 500, "me": 500}
         debts = {} # who owes what
         for exp in expenses:
             payer = exp["payer_user_id"]
-            splits = json.loads(exp["split_data"])
+            split_raw = exp["split_data"]
+            if not split_raw:
+                continue
+            
+            try:
+                splits = json.loads(split_raw)
+            except (json.JSONDecodeError, TypeError):
+                # Fallback: if it's a comma-separated list of names (e.g. "Alice, Bob"), split total_amount equally
+                names = [n.strip() for n in split_raw.split(",") if n.strip()]
+                if names:
+                    share = exp["total_amount_rupees"] / len(names)
+                    splits = {name: share for name in names}
+                else:
+                    splits = {}
+                    
             for person, share in splits.items():
                 if person == payer:
                     continue
