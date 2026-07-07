@@ -80,7 +80,7 @@ city_mcp = McpToolset(
             env=_mcp_env,
             cwd=_project_root
         ),
-        timeout=30.0   # fastmcp takes ~14s to import on Windows cold-start
+        timeout=90.0   # fastmcp takes ~14s (or more) to import on Windows cold-start
     )
 )
 
@@ -95,7 +95,7 @@ chroma_mcp = McpToolset(
             env=_mcp_env,
             cwd=_project_root
         ),
-        timeout=30.0   # fastmcp takes ~14s to import on Windows cold-start
+        timeout=90.0   # fastmcp takes ~14s (or more) to import on Windows cold-start
     )
 )
 

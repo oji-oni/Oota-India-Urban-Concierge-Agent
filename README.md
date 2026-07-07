@@ -126,11 +126,41 @@ The container exposes port **8000** with the following endpoints:
 
 | Endpoint | Method | Description |
 |---|---|---|
+| `/` | GET | Interactive Frontend Dashboard |
 | `/health` | GET | Health status + DB connectivity |
 | `/cities` | GET | List of supported city slugs |
 | `/agent` | POST | Run an agent turn (JSON body) |
 | `/webhook/{token}` | POST | Telegram webhook receiver |
 | `/docs` | GET | Interactive OpenAPI docs |
+| `/api/dashboard/*` | GET/POST | REST endpoints powering the frontend dashboard |
+
+---
+
+## Interactive Frontend Dashboard
+
+Oota comes with a premium single-page **Interactive Frontend Dashboard** built using an **Aquamorphic Design System** (fluid glassmorphism, responsive grids, dark/light theme, and beautiful emojis).
+
+### Dashboard Panels & Features
+- 🟢 **System Status** — real-time health of SQLite, ChromaDB, and Telegram Bot
+- 🤖 **Agent Hierarchy** — visualize the ADK agent tree and sub-agent statuses
+- 💬 **Interactive Chat** — chat directly with Oota; responses populate the system logs
+- 🌦️ **Weather Widget** — hourly weather forecast and UV/rain badges for the active city
+- 🔧 **Tools & Capabilities** — real-time listing of all 35+ available tools (MCP + Custom)
+- 📜 **History & Suggestions** — chronological log of planned itineraries and accessed memories
+- 💸 **Expense Tracker** — interactive budget limits gauge and recent ledger logs
+- 📱 **Telegram Bot Info** — configuration details and scheduled jobs
+- 🧠 **Autonomous Decisions Log** — real-time activity log of what decisions the agent has made
+
+### How to Run the Dashboard
+Set the `WEBHOOK_MODE` environment variable to `true` or enable `DASHBOARD_MODE=true` in your `.env`.
+
+```bash
+# Start in Webhook/Dashboard mode
+$env:WEBHOOK_MODE="true"; python main.py
+
+# Open your browser and navigate to:
+http://localhost:8000/
+```
 
 ---
 
@@ -212,6 +242,7 @@ Outbound connections (only):
 | `TELEGRAM_ALLOWED_USER_IDS` | *(empty = all)* | Comma-separated allowed IDs |
 | `WEBHOOK_MODE` | `false` | `true` → FastAPI webhook server |
 | `WEBHOOK_URL` | — | Public HTTPS URL for webhook |
+| `DASHBOARD_MODE` | `false` | `true` → Auto-enables webhook mode and serves dashboard |
 | `PORT` | `8000` | Server port |
 | `OLLAMA_HOST` | `http://localhost:11434` | Local LLM fallback URL |
 
@@ -225,6 +256,10 @@ oota/
 │   ├── cities/              # City seed modules (bengaluru.py, mumbai.py, …)
 │   ├── documents/           # Local docs for RAG (menus, transit maps, etc.)
 │   └── seed_database.py     # DB initialiser — run once before first use
+├── frontend/                # Interactive Frontend Dashboard
+│   ├── index.html           # Main dashboard layout
+│   ├── styles.css           # Aquamorphic CSS design system
+│   └── app.js               # Theme, polling, and interactive chat logic
 ├── mcp_servers/
 │   └── city_data_server.py  # FastMCP server exposing 22 tools
 ├── oota_agent/
@@ -237,7 +272,7 @@ oota/
 ├── gateway/
 │   ├── __init__.py
 │   ├── telegram_bot.py      # Full async Telegram bot (python-telegram-bot v20+)
-│   └── webhook_server.py    # FastAPI REST + Telegram webhook server
+│   └── webhook_server.py    # FastAPI REST + Telegram webhook server + Dashboard API
 ├── .agents/
 │   └── skills/
 │       ├── auto/            # Machine-generated skills (committed to git)

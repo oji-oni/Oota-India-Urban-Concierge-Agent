@@ -230,7 +230,8 @@ async def main() -> None:
     _mcp_proc = _start_mcp_server()
 
     # ── 3. Select run mode ────────────────────────────────────────────────────
-    webhook_mode = os.getenv("WEBHOOK_MODE", "false").lower() == "true"
+    dashboard_mode = os.getenv("DASHBOARD_MODE", "false").lower() == "true"
+    webhook_mode = dashboard_mode or os.getenv("WEBHOOK_MODE", "false").lower() == "true"
     telegram_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
     try:
